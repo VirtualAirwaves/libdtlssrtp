@@ -22,7 +22,7 @@
  * with an optional ability to trigger timeout.
  */
 #include <stddef.h>
-#include <sys/time.h> //for struct timeval
+#include "winsock2.h"
 
 #ifdef __cplusplus
 extern "C" {

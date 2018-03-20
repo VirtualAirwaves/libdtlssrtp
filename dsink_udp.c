@@ -15,14 +15,15 @@
    License along with the DTLS-SRTP library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#include <sys/socket.h>
+#include "winsock2.h"
+#include "ws2tcpip.h"
 #include <sys/types.h>
-#include <netinet/in.h>
 #include "dsink_udp.h"
 /*
  * An exemplative data sink implemented directory atop sendto(2),
  * with no scheduling ability.
  */
+
 static DSINK_SENDTO(udp_sendto)
 {
   return sendto(

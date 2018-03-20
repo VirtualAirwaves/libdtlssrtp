@@ -143,7 +143,7 @@ dtls_sess* dtls_sess_new(
   }
   sess->type = DTLS_CONTYPE_NEW;
   
-  pthread_mutex_init(&sess->lock, NULL);
+  sess->ghMutex = CreateMutex(NULL, FALSE, NULL),
   dtls_sess_set_sink(sess, sink);
   return sess;
   
@@ -162,7 +162,7 @@ void dtls_sess_free(dtls_sess* sess)
     SSL_free(sess->ssl);
     sess->ssl = NULL;
   }
-  pthread_mutex_destroy(&sess->lock);
+  CloseHandle(sess->ghMutex);
   free(sess);
 }
 
@@ -181,7 +181,8 @@ ptrdiff_t dtls_sess_send_pending(
   size_t out = 0;
   ptrdiff_t ret = 0;
   if(pending > 0) {
-    char outgoing[pending];
+    // char outgoing[pending];
+	char * outgoing = malloc(pending);
     out = BIO_read(wbio, outgoing, pending);
     if(sess->sink->sched != NULL){
       struct timeval tv = {0, 0};
@@ -189,6 +190,7 @@ ptrdiff_t dtls_sess_send_pending(
 			dtls_sess_get_timeout(sess, &tv)?&tv:NULL);
     }
     ret = sess->sink->sendto(carrier, outgoing, out, 0, dest, destlen);
+	free(outgoing);
   }
   return ret;
 }
@@ -203,14 +205,16 @@ ptrdiff_t dtls_sess_put_packet(
 			       )
 {
   ptrdiff_t ret = 0;
-  char dummy[len];
+  // char dummy[len];
+  char * dummy = malloc(len);
   
   if(sess->ssl == NULL){
     return -1;
   }
 
-  pthread_mutex_lock(&sess->lock);
-  pthread_mutex_unlock(&sess->lock);
+
+  DWORD dwWaitResult = WaitForSingleObject(sess->ghMutex, INFINITE);
+  ReleaseMutex(sess->ghMutex);
 
   BIO* rbio = dtls_sess_get_rbio(sess);
 
@@ -225,6 +229,7 @@ ptrdiff_t dtls_sess_put_packet(
   ret = SSL_read(sess->ssl, dummy, len);
 
   if((ret < 0) && SSL_get_error(sess->ssl, ret) == SSL_ERROR_SSL){
+	  free(dummy);
     return ret;
   }
 
@@ -234,6 +239,7 @@ ptrdiff_t dtls_sess_put_packet(
     sess->type = DTLS_CONTYPE_EXISTING;
   }
 
+  free(dummy);
   return ret;
   
 }
@@ -258,9 +264,9 @@ ptrdiff_t dtls_do_handshake(
     dtls_sess_set_state(sess, DTLS_CONSTATE_ACT);
   }
   SSL_do_handshake(sess->ssl);
-  pthread_mutex_lock(&sess->lock);
+  DWORD dwWaitResult = WaitForSingleObject(sess->ghMutex, INFINITE);
   ptrdiff_t ret = dtls_sess_send_pending(sess, carrier, dest, destlen);
-  pthread_mutex_unlock(&sess->lock);
+  ReleaseMutex(sess->ghMutex);
   return ret;
 }
 

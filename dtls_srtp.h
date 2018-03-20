@@ -30,9 +30,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// for mutex
-#include <pthread.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -110,7 +107,7 @@ typedef struct dtls_sess {
   const dsink* sink;
   enum dtls_con_state state;
   enum dtls_con_type type;
-  pthread_mutex_t lock;
+  HANDLE ghMutex;
 }dtls_sess;
 
   /*
@@ -327,9 +324,22 @@ static inline const char* str_nullforempty(const char* str)
   //init and uninit openssl library.
 static inline int dtls_init_openssl(void)
 {
+
+  WSADATA wsaData;
+  int iResult;
+
+  // Initialize Winsock
+  iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if (iResult != 0) {
+	  printf("WSAStartup failed: %d\n", iResult);
+	  return 1;
+  }
+
+
   OpenSSL_add_ssl_algorithms();
   SSL_load_error_strings();
   return SSL_library_init();
+
 }
 
 
@@ -337,6 +347,8 @@ static inline void dtls_uninit_openssl(void)
 {
   ERR_free_strings();
   EVP_cleanup();
+
+  WSACleanup();
 }
 
 
