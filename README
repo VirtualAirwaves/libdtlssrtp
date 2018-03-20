@@ -4,6 +4,20 @@ Richfit Information Technology Co.Ltd.
 Copyright (C) Richfit Information Technology Co.Ltd.
 Contributed by Xie Tianming <persmule@gmail.com>, 2015.
 
+
+This fork will compile and run on Windows 10 as a Visual Studio 2017 file.
+
+Run client with command 
+
+.\libdtlssrtp.exe -b 127.0.0.1 -c .\client_pub.pem -k .\client_private.pem -p 4445 127.0.0.1 5545
+
+run server with command 
+
+.\libdtslssrtp.exe -s -b 127.0.0.1 -c .\server_pub.pem -k .\server_private.pem -p 5545 127.0.0.1 4445
+
+==
+==
+
 The DTLS-SRTP library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
 License as published by the Free Software Foundation; either
